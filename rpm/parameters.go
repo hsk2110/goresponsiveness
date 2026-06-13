@@ -33,10 +33,12 @@ type SpecParameters struct {
 	ProbeCapacityPct float64
 	Percentile       uint
 	ExecutionPolicy  executor.ExecutionMethod
+	Inp              uint64
+	Inc              uint64
 }
 
-func SpecParametersFromArguments(timeout int, mad int, id int, tmp uint, sdt float64, mnp int,
-	mps int, ptc float64, p int, executionPolicy executor.ExecutionMethod,
+func SpecParametersFromArguments(timeout int, mad int, id int, tmp uint, sdt float64, inp uint64,
+	inc uint64, mnp int, mps int, ptc float64, p int, executionPolicy executor.ExecutionMethod,
 ) (*SpecParameters, error) {
 	if timeout <= 0 {
 		return nil, fmt.Errorf("cannot specify a 0 or negative timeout for the test")
@@ -52,6 +54,12 @@ func SpecParametersFromArguments(timeout int, mad int, id int, tmp uint, sdt flo
 	}
 	if sdt < 0 {
 		return nil, fmt.Errorf("cannot specify a negative standard-deviation tolerance for the test")
+	}
+	if inp < 1 {
+		return nil, fmt.Errorf("cannot specify a 0 or negative initial number of parallel connections for the test")
+	}
+	if inc < 1 {
+		return nil, fmt.Errorf("cannot specify a 0 or negative increment number of connections for the test")
 	}
 	if mnp <= 0 {
 		return nil, fmt.Errorf("cannot specify a 0 or negative maximum number of parallel connections for the test")
@@ -74,6 +82,7 @@ func SpecParametersFromArguments(timeout int, mad int, id int, tmp uint, sdt flo
 		EvalInterval: evalInterval, TrimmedMeanPct: tmp, StdDevTolerance: sdt,
 		MaxParallelConns: mnp, ProbeInterval: probeInterval, ProbeCapacityPct: ptc,
 		Percentile: uint(p), ExecutionPolicy: executionPolicy,
+		Inp: inp, Inc: inc,
 	}
 	return &params, nil
 }
@@ -85,12 +94,14 @@ Moving-Average Distance:                     %v,
 Interval Duration:                           %v,
 Trimmed-Mean Percentage:                     %v,
 Standard-Deviation Tolerance:                %v,
+Initial number of connections:				 %v,
+Connections at each interval:				 %v,
 Maximum number of parallel connections:      %v,
 Probe Interval:                              %v (derived from given maximum-probes-per-second parameter),
 Maximum Percentage Of Throughput For Probes: %v
 Execution Policy:                            %v`,
 		parameters.TestTimeout, parameters.MovingAvgDist, parameters.EvalInterval, parameters.TrimmedMeanPct,
-		parameters.StdDevTolerance, parameters.MaxParallelConns, parameters.ProbeInterval,
+		parameters.Inp, parameters.Inc, parameters.StdDevTolerance, parameters.MaxParallelConns, parameters.ProbeInterval,
 		parameters.ProbeCapacityPct, parameters.ExecutionPolicy.ToString(),
 	)
 }

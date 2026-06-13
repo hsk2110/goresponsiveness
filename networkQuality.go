@@ -95,6 +95,16 @@ var (
 		constants.SpecParameterCliOptionsDefaults.Sdt,
 		"Cutoff in the standard deviation of measured values about network conditions between unstable and stable.",
 	)
+	rpminp = flag.Int(
+		"rpm.inp",
+		int(constants.SpecParameterCliOptionsDefaults.Inp),
+		"Initial number of parallel connections to establish at the start of the test.",
+	)
+	rpminc = flag.Int(
+		"rpm.inc",
+		int(constants.SpecParameterCliOptionsDefaults.Inc),
+		"Number of connections to add to the pool at each interval.",
+	)
 	rpmmnp = flag.Int(
 		"rpm.mnp",
 		constants.SpecParameterCliOptionsDefaults.Mnp,
@@ -196,7 +206,7 @@ func main() {
 	}
 
 	specParameters, err := rpm.SpecParametersFromArguments(*rpmtimeout, *rpmmad, *rpmid,
-		*rpmtmp, *rpmsdt, *rpmmnp, *rpmmps, *rpmptc, *rpmp, parallelTestExecutionPolicy)
+		*rpmtmp, *rpmsdt, uint64(*rpminp), uint64(*rpminc), *rpmmnp, *rpmmps, *rpmptc, *rpmp, parallelTestExecutionPolicy)
 	if err != nil {
 		fmt.Fprintf(
 			os.Stderr,
@@ -709,6 +719,8 @@ func main() {
 				&direction.Lgcc,
 				&globalNumericBucketGenerator,
 				specParameters.MaxParallelConns,
+				specParameters.Inp,
+				specParameters.Inc,
 				specParameters.EvalInterval,
 				*calculateExtendedStats,
 				direction.DirectionDebugging,

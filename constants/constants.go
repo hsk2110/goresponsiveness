@@ -21,11 +21,12 @@ import (
 )
 
 var (
+	// removed these two parameters since they are now in CLI
 	// The initial number of load-generating connections when attempting to saturate the network.
-	StartingNumberOfLoadGeneratingConnections uint64 = 1
+	// StartingNumberOfLoadGeneratingConnections uint64 = 1
 	// The number of load-generating connections to add at each interval while attempting to
 	// saturate the network.
-	AdditiveNumberOfLoadGeneratingConnections uint64 = 1
+	// AdditiveNumberOfLoadGeneratingConnections uint64 = 1
 
 	// The amount of time that the client will cooldown if it is in debug mode.
 	CooldownPeriod time.Duration = 4 * time.Second
@@ -52,10 +53,12 @@ type SpecParametersCliOptions struct {
 	Id  int
 	Tmp uint
 	Sdt float64
+	Inp uint64
+	Inc uint64
 	Mnp int
 	Mps int
 	Ptc float64
 	P   int
 }
 
-var SpecParameterCliOptionsDefaults = SpecParametersCliOptions{Mad: 4, Id: 1, Tmp: 5, Sdt: 5.0, Mnp: 16, Mps: 100, Ptc: 0.05, P: 90}
+var SpecParameterCliOptionsDefaults = SpecParametersCliOptions{Mad: 4, Id: 1, Tmp: 5, Sdt: 5.0, Inp: 1, Inc: 1, Mnp: 16, Mps: 100, Ptc: 0.05, P: 90}

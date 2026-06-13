@@ -24,7 +24,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/network-quality/goresponsiveness/constants"
 	"github.com/network-quality/goresponsiveness/debug"
 	"github.com/network-quality/goresponsiveness/extendedstats"
 	"github.com/network-quality/goresponsiveness/lgc"
@@ -345,6 +344,8 @@ func LoadGenerator[BucketType utilities.Number](
 	loadGeneratingConnectionsCollection *lgc.LoadGeneratingConnectionCollection,
 	bucketGenerator *series.NumericBucketGenerator[BucketType],
 	mnp int,
+	inp uint64,
+	inc uint64,
 	id time.Duration, // the interval to wait to test for stability (it doubles as the time between adding LGCs).
 	captureExtendedStats bool, // do we want to attempt to gather TCP information on these connections?
 	debugging *debug.DebugWithPrefix, // How can we forget debugging?
@@ -356,7 +357,7 @@ func LoadGenerator[BucketType utilities.Number](
 
 		flowsCreated += addFlows(
 			networkActivityCtx,
-			constants.StartingNumberOfLoadGeneratingConnections,
+			inp,
 			loadGeneratingConnectionsCollection,
 			lgcGenerator,
 			debugging.Level,
@@ -531,7 +532,7 @@ func LoadGenerator[BucketType utilities.Number](
 				// Just add another constants.AdditiveNumberOfLoadGeneratingConnections flows -- that's our only job now!
 				flowsCreated += addFlows(
 					networkActivityCtx,
-					constants.AdditiveNumberOfLoadGeneratingConnections,
+					inc,
 					loadGeneratingConnectionsCollection,
 					lgcGenerator,
 					debugging.Level,
