@@ -30,9 +30,6 @@ func NewConcurrentFileWriter(file *os.File) *ConcurrentWriter {
 
 func (ccw *ConcurrentWriter) Write(p []byte) (n int, err error) {
 	ccw.lock.Lock()
-	defer func() {
-		ccw.file.Sync()
-		ccw.lock.Unlock()
-	}()
+	defer ccw.lock.Unlock()
 	return ccw.file.Write(p)
 }
