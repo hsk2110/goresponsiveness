@@ -1296,6 +1296,13 @@ func main() {
 		}
 	}
 
+	// Add timestamp for end of test
+	endtime := time.Now().UTC()
+	fmt.Printf(
+		"%s UTC Go Responsiveness Finished...\n",
+		endtime.Format("01-02-2006 15:04:05"),
+	)
+
 	// Stop the world.
 	operatingCtxCancel()
 
