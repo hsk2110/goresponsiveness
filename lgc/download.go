@@ -252,7 +252,7 @@ func (lgd *LoadGeneratingConnectionDownload) ClientId() uint64 {
 
 func (lgd *LoadGeneratingConnectionDownload) TransferredInInterval() (uint64, time.Duration) {
 	transferred := atomic.SwapUint64(&lgd.downloaded, 0)
-	newIntervalEnd := (time.Now().Sub(lgd.downloadStartTime)).Nanoseconds()
+	newIntervalEnd := (time.Since(lgd.downloadStartTime)).Nanoseconds()
 	previousIntervalEnd := atomic.SwapInt64(&lgd.lastIntervalEnd, newIntervalEnd)
 	intervalLength := time.Duration(newIntervalEnd - previousIntervalEnd)
 	if debug.IsDebug(lgd.debug) {

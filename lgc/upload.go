@@ -251,7 +251,7 @@ func (lgu *LoadGeneratingConnectionUpload) ClientId() uint64 {
 
 func (lgu *LoadGeneratingConnectionUpload) TransferredInInterval() (uint64, time.Duration) {
 	transferred := atomic.SwapUint64(&lgu.uploaded, 0)
-	newIntervalEnd := (time.Now().Sub(lgu.uploadStartTime)).Nanoseconds()
+	newIntervalEnd := (time.Since(lgu.uploadStartTime)).Nanoseconds()
 	previousIntervalEnd := atomic.SwapInt64(&lgu.lastIntervalEnd, newIntervalEnd)
 	intervalLength := time.Duration(newIntervalEnd - previousIntervalEnd)
 	if debug.IsDebug(lgu.debug) {
