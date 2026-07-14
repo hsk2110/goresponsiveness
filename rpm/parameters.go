@@ -101,7 +101,7 @@ Probe Interval:                              %v (derived from given maximum-prob
 Maximum Percentage Of Throughput For Probes: %v
 Execution Policy:                            %v`,
 		parameters.TestTimeout, parameters.MovingAvgDist, parameters.EvalInterval, parameters.TrimmedMeanPct,
-		parameters.Inp, parameters.Inc, parameters.StdDevTolerance, parameters.MaxParallelConns, parameters.ProbeInterval,
+		parameters.Inp, parameters.StdDevTolerance, parameters.Inc, parameters.MaxParallelConns, parameters.ProbeInterval,
 		parameters.ProbeCapacityPct, parameters.ExecutionPolicy.ToString(),
 	)
 }
