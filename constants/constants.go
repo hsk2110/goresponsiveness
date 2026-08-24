@@ -61,4 +61,4 @@ type SpecParametersCliOptions struct {
 	P   int
 }
 
-var SpecParameterCliOptionsDefaults = SpecParametersCliOptions{Mad: 4, Id: 1, Tmp: 5, Sdt: 5.0, Inp: 1, Inc: 1, Mnp: 16, Mps: 100, Ptc: 0.05, P: 90}
+var SpecParameterCliOptionsDefaults = SpecParametersCliOptions{Mad: 4, Id: 5, Tmp: 5, Sdt: 5.0, Inp: 1, Inc: 1, Mnp: 16, Mps: 100, Ptc: 0.05, P: 90}
