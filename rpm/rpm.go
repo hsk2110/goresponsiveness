@@ -504,6 +504,12 @@ func LoadGenerator[BucketType utilities.Number](
 				granularThroughputDatapoints,
 			}
 
+			// After computing throughput
+			fmt.Printf("Interval %d: %d active connections, throughput: %.2f Mbps\n",
+				currentIntervalId,
+				instantaneousThroughputDataPoints,
+				utilities.ToMbps(instantaneousThroughputTotal))
+
 			currentBucketId := bucketGenerator.Generate()
 
 			seriesCommunicationChannel <- series.SeriesMessage[ThroughputDataPoint, BucketType]{
