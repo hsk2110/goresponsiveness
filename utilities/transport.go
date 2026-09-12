@@ -23,9 +23,17 @@ import (
 	"golang.org/x/net/http2"
 )
 
-func OverrideHostTransport(transport *http.Transport, connectToAddr string) {
-	dialer := &net.Dialer{
-		Timeout: 10 * time.Second,
+func OverrideHostTransport(
+	transport *http.Transport,
+	connectToAddr string,
+	baseDialContext func(ctx context.Context, network, addr string) (net.Conn, error),
+) {
+
+	if baseDialContext == nil {
+		dialer := &net.Dialer{
+			Timeout: 10 * time.Second,
+		}
+		baseDialContext = dialer.DialContext
 	}
 
 	transport.DialContext = func(ctx context.Context, network, addr string) (net.Conn, error) {
@@ -38,7 +46,7 @@ func OverrideHostTransport(transport *http.Transport, connectToAddr string) {
 			addr = net.JoinHostPort(connectToAddr, port)
 		}
 
-		return dialer.DialContext(ctx, network, addr)
+		return baseDialContext(ctx, network, addr)
 	}
 
 	if t2, err := http2.ConfigureTransports(transport); err != nil {

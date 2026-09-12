@@ -70,16 +70,33 @@ func (es *AggregateExtendedStats) Repr() string {
 }
 
 func GetTCPInfo(basicConn net.Conn) (*unix.TCPInfo, error) {
-	tlsConn, ok := basicConn.(*tls.Conn)
-	if !ok {
-		return nil, fmt.Errorf("OOPS: Outermost connection is not a TLS connection")
+	var tcpConn *net.TCPConn
+
+	// Try TLS first
+	if tlsConn, ok := basicConn.(*tls.Conn); ok {
+		netConn := tlsConn.NetConn()
+
+		// Unwrap if the net.Conn is wrapped
+		if wrapper, ok := netConn.(interface{ Unwrap() net.Conn }); ok {
+			netConn = wrapper.Unwrap()
+		}
+
+		var ok2 bool
+		tcpConn, ok2 = netConn.(*net.TCPConn)
+		if !ok2 {
+			return nil, fmt.Errorf("OOPS: Could not get the TCP info for the connection (not a TCP connection)")
+		}
+	} else if wrapper, ok := basicConn.(interface{ Unwrap() net.Conn }); ok {
+		// Only unwrap if NOT TLS
+		basicConn = wrapper.Unwrap()
+		tcpConn, ok = basicConn.(*net.TCPConn)
+		if !ok {
+			return nil, fmt.Errorf("OOPS: Could not get the TCP info for the connection (not a TCP connection)")
+		}
+	} else {
+		return nil, fmt.Errorf("OOPS: Connection is neither TLS nor a known wrapper type")
 	}
-	tcpConn, ok := tlsConn.NetConn().(*net.TCPConn)
-	if !ok {
-		return nil, fmt.Errorf(
-			"OOPS: Could not get the TCP info for the connection (not a TCP connection)",
-		)
-	}
+
 	rawConn, err := tcpConn.SyscallConn()
 	if err != nil {
 		return nil, err

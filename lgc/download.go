@@ -19,6 +19,7 @@ import (
 	"crypto/tls"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"net/http/httptrace"
 	"os"
@@ -61,6 +62,7 @@ func NewLoadGeneratingConnectionDownload(url string, keyLogger io.Writer, connec
 		ConnectToAddr:      connectToAddr,
 		InsecureSkipVerify: insecureSkipVerify,
 		congestionControl:  congestionControl,
+		status:             LGC_STATUS_NOT_STARTED,
 		statusLock:         &sync.Mutex{},
 	}
 	lgd.statusWaiter = sync.NewCond(lgd.statusLock)
@@ -270,6 +272,7 @@ type loadGeneratingConnectionDownloadReader struct {
 	ctx      context.Context
 	readable io.Reader
 	lgd      *LoadGeneratingConnectionDownload
+	started  bool
 }
 
 func (cr *loadGeneratingConnectionDownloadReader) Read(p []byte) (n int, err error) {
@@ -277,16 +280,15 @@ func (cr *loadGeneratingConnectionDownloadReader) Read(p []byte) (n int, err err
 		return 0, io.EOF
 	}
 
-	if *cr.n == 0 {
+	if !cr.started {
+		cr.started = true
 		cr.lgd.statusLock.Lock()
 		cr.lgd.status = LGC_STATUS_RUNNING
 		cr.lgd.statusWaiter.Broadcast()
 		cr.lgd.statusLock.Unlock()
 	}
 
-	n, err = cr.readable.Read(p)
-	atomic.AddUint64(cr.n, uint64(n))
-	return
+	return cr.readable.Read(p)
 }
 
 func (lgd *LoadGeneratingConnectionDownload) Start(
@@ -303,6 +305,17 @@ func (lgd *LoadGeneratingConnectionDownload) Start(
 			InsecureSkipVerify: lgd.InsecureSkipVerify,
 		},
 	}
+
+	baseDial := func(ctx context.Context, network, addr string) (net.Conn, error) {
+		d := &net.Dialer{}
+		c, err := d.DialContext(ctx, network, addr)
+		if err != nil {
+			return nil, err
+		}
+		return &countingConnRead{Conn: c, n: &lgd.downloaded}, nil
+	}
+
+	utilities.OverrideHostTransport(transport, lgd.ConnectToAddr, baseDial)
 
 	if !utilities.IsInterfaceNil(lgd.KeyLogger) {
 		if debug.IsDebug(lgd.debug) {
@@ -321,8 +334,6 @@ func (lgd *LoadGeneratingConnectionDownload) Start(
 		transport.TLSClientConfig.KeyLogWriter = lgd.KeyLogger
 	}
 	transport.TLSClientConfig.InsecureSkipVerify = lgd.InsecureSkipVerify
-
-	utilities.OverrideHostTransport(transport, lgd.ConnectToAddr)
 
 	lgd.client = &http.Client{Transport: transport}
 	lgd.tracer = traceable.GenerateHttpTimingTracer(lgd, lgd.debug)

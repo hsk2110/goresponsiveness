@@ -19,6 +19,7 @@ import (
 	"crypto/tls"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"net/http/httptrace"
 	"os"
@@ -273,26 +274,26 @@ func (lgd *LoadGeneratingConnectionUpload) Direction() LgcDirection {
 }
 
 type syntheticCountingReader struct {
-	n   *uint64
-	ctx context.Context
-	lgu *LoadGeneratingConnectionUpload
+	n       *uint64
+	ctx     context.Context
+	lgu     *LoadGeneratingConnectionUpload
+	started bool
 }
 
 func (s *syntheticCountingReader) Read(p []byte) (n int, err error) {
 	if s.ctx.Err() != nil {
 		return 0, io.EOF
 	}
-	if *s.n == 0 {
+
+	if !s.started {
+		s.started = true
 		s.lgu.statusLock.Lock()
 		s.lgu.status = LGC_STATUS_RUNNING
 		s.lgu.statusWaiter.Broadcast()
 		s.lgu.statusLock.Unlock()
 	}
-	err = nil
-	n = len(p)
 
-	atomic.AddUint64(s.n, uint64(n))
-	return
+	return len(p), nil
 }
 
 func (lgu *LoadGeneratingConnectionUpload) doUpload(ctx context.Context) error {
@@ -357,6 +358,17 @@ func (lgu *LoadGeneratingConnectionUpload) Start(
 		},
 	}
 
+	baseDial := func(ctx context.Context, network, addr string) (net.Conn, error) {
+		d := &net.Dialer{}
+		c, err := d.DialContext(ctx, network, addr)
+		if err != nil {
+			return nil, err
+		}
+		return &countingConnWrite{Conn: c, n: &lgu.uploaded}, nil
+	}
+
+	utilities.OverrideHostTransport(transport, lgu.ConnectToAddr, baseDial)
+
 	if !utilities.IsInterfaceNil(lgu.KeyLogger) {
 		if debug.IsDebug(lgu.debug) {
 			fmt.Printf(
@@ -365,8 +377,6 @@ func (lgu *LoadGeneratingConnectionUpload) Start(
 		}
 		transport.TLSClientConfig.KeyLogWriter = lgu.KeyLogger
 	}
-
-	utilities.OverrideHostTransport(transport, lgu.ConnectToAddr)
 
 	lgu.client = &http.Client{Transport: transport}
 	lgu.tracer = traceable.GenerateHttpTimingTracer(lgu, lgu.debug)

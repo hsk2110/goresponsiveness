@@ -50,7 +50,7 @@ func (c *Config) Get(configHost string, configPath string, insecureSkipVerify bo
 		configTransport.TLSClientConfig.KeyLogWriter = keyLogger
 	}
 
-	utilities.OverrideHostTransport(configTransport, c.ConnectToAddr)
+	utilities.OverrideHostTransport(configTransport, c.ConnectToAddr, nil)
 
 	configClient := &http.Client{Transport: configTransport}
 
