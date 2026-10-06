@@ -355,6 +355,26 @@ func LoadGenerator[BucketType utilities.Number](
 	go func() {
 		flowsCreated := uint64(0)
 
+		loadGeneratingConnectionsCollection.Lock.Lock()
+		currentParallelConnectionCount, err := loadGeneratingConnectionsCollection.Len()
+		loadGeneratingConnectionsCollection.Lock.Unlock()
+		if err == nil && currentParallelConnectionCount < mnp {
+			remainingCapacity := uint64(mnp - currentParallelConnectionCount)
+			if inp > remainingCapacity {
+				inp = remainingCapacity
+			}
+		} else {
+			inp = 0
+		}
+
+		flowsCreated += addFlows(
+			networkActivityCtx,
+			inp,
+			loadGeneratingConnectionsCollection,
+			lgcGenerator,
+			debugging.Level,
+		)
+
 		flowsCreated += addFlows(
 			networkActivityCtx,
 			inp,
@@ -505,10 +525,10 @@ func LoadGenerator[BucketType utilities.Number](
 			}
 
 			// After computing throughput
-			fmt.Printf("Interval %d: %d active connections, throughput: %.2f Mbps\n",
-				currentIntervalId,
-				instantaneousThroughputDataPoints,
-				utilities.ToMbps(instantaneousThroughputTotal))
+			/* fmt.Printf("Interval %d: %d active connections, throughput: %.2f Mbps\n",
+			currentIntervalId,
+			instantaneousThroughputDataPoints,
+			utilities.ToMbps(instantaneousThroughputTotal)) */
 
 			currentBucketId := bucketGenerator.Generate()
 
@@ -535,14 +555,19 @@ func LoadGenerator[BucketType utilities.Number](
 				}
 			}
 			if currentParallelConnectionCount < mnp {
-				// Just add another constants.AdditiveNumberOfLoadGeneratingConnections flows -- that's our only job now!
-				flowsCreated += addFlows(
-					networkActivityCtx,
-					inc,
-					loadGeneratingConnectionsCollection,
-					lgcGenerator,
-					debugging.Level,
-				)
+				remainingCapacity := uint64(mnp - currentParallelConnectionCount)
+				flowsToAdd := min(inc, remainingCapacity)
+
+				if flowsToAdd > 0 {
+					// Just add another flowsToAdd flows -- that's our only job now!
+					flowsCreated += addFlows(
+						networkActivityCtx,
+						flowsToAdd,
+						loadGeneratingConnectionsCollection,
+						lgcGenerator,
+						debugging.Level,
+					)
+				}
 			} else if debug.IsWarn(debugging.Level) {
 				fmt.Printf(
 					"%v: Maximum number of parallel transport-layer connections reached (%d). Not adding another.\n",
