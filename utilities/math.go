@@ -132,7 +132,7 @@ func AllSequentialIncreasesLessThan[T Number](elements []T, limit float64) (bool
 
 // elements must already be sorted!
 func TrimBy[T Number](elements []T, trim int) []T {
-	numberToKeep := int(float32(len(elements)) * (float32(trim) / 100.0))
+	numberToKeep := int(float32(len(elements)) * (float32(100-trim) / 100.0))
 
 	return elements[:numberToKeep]
 }
