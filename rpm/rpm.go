@@ -35,25 +35,38 @@ import (
 func addFlows(
 	ctx context.Context,
 	toAdd uint64,
+	maxConnections int,
 	lgcc *lgc.LoadGeneratingConnectionCollection,
 	lgcGenerator func() lgc.LoadGeneratingConnection,
 	debugging debug.DebugLevel,
 ) uint64 {
+	if toAdd == 0 || maxConnections <= 0 {
+		return 0
+	}
+
 	lgcc.Lock.Lock()
 	defer lgcc.Lock.Unlock()
+
+	current := len(*lgcc.LGCs)
+	if current >= maxConnections {
+		return 0
+	}
+
+	remaining := uint64(maxConnections - current)
+	if toAdd > remaining {
+		toAdd = remaining
+	}
+
 	for i := uint64(0); i < toAdd; i++ {
-		// First, generate the connection.
 		newConnection := lgcGenerator()
 		lgcc.Append(newConnection)
+
 		if debug.IsDebug(debugging) {
 			fmt.Printf("Added a new %s load-generating connection.\n", newConnection.Direction())
 		}
-		// Second, try to start the connection.
+
 		if !newConnection.Start(ctx, debugging) {
-			// If there was an error, we'll make sure that the caller knows it.
-			fmt.Printf(
-				"Error starting lgc with id %d!\n", newConnection.ClientId(),
-			)
+			fmt.Printf("Error starting lgc with id %d!\n", newConnection.ClientId())
 			return i
 		}
 	}
@@ -370,14 +383,7 @@ func LoadGenerator[BucketType utilities.Number](
 		flowsCreated += addFlows(
 			networkActivityCtx,
 			inp,
-			loadGeneratingConnectionsCollection,
-			lgcGenerator,
-			debugging.Level,
-		)
-
-		flowsCreated += addFlows(
-			networkActivityCtx,
-			inp,
+			mnp,
 			loadGeneratingConnectionsCollection,
 			lgcGenerator,
 			debugging.Level,
@@ -563,6 +569,7 @@ func LoadGenerator[BucketType utilities.Number](
 					flowsCreated += addFlows(
 						networkActivityCtx,
 						flowsToAdd,
+						mnp,
 						loadGeneratingConnectionsCollection,
 						lgcGenerator,
 						debugging.Level,
