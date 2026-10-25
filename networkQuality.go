@@ -1188,6 +1188,11 @@ func main() {
 				time.Sleep(constants.CooldownPeriod)
 				fmt.Printf("Done cooling down.\n")
 			}
+
+			if parallelTestExecutionPolicy != executor.Parallel {
+				testEndTime := time.Now().UTC()
+				fmt.Printf("%s phase finished at %s\n", direction.DirectionLabel, testEndTime.Format("01-02-2006 15:04:05"))
+			}
 		}
 		directionExecutionUnits = append(directionExecutionUnits, directionExecutionUnit)
 	} // End of direction testing.
